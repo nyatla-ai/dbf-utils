@@ -29,23 +29,33 @@ KEY_CODE   PREF  CITY  S_AREA  PREF_NAME  CITY_NAME      S_NAME
 ### prefectures
 | column     | type    | details                          |
 |----------- |-------- |--------------------------------- |
-| pref_code  | INTEGER PK | 2 桁の都道府県コード (`PREF`) |
+| prefecture_id | INTEGER PK AUTOINCREMENT | 自動採番の ID |
+| pref_code  | INTEGER UNIQUE | 2 桁の都道府県コード (`PREF`) |
 | pref_name  | TEXT    | 都道府県名 (`PREF_NAME`)       |
+
+`pref_code` は元の都道府県コードで、重複を許さない一意制約を設けます。
 
 ### cities
 | column    | type    | details                                             |
 |---------- |-------  |---------------------------------------------------- |
-| city_id   | TEXT PK | `pref_code` と `city_code` を連結した識別子         |
+| city_id   | INTEGER PK AUTOINCREMENT | 自動採番の市区町村 ID |
 | pref_code | INTEGER FK | `prefectures.pref_code` への外部キー            |
 | city_code | INTEGER    | 3 桁の市区町村コード (`CITY`)                     |
 | city_name | TEXT    | 市区町村名 (`CITY_NAME`)                             |
 
+`pref_code` と `city_code` の組み合わせが一意となるよう制約を設けます。
+
 ### sub_areas
 | column      | type      | details                                       |
 |------------ |--------- |---------------------------------------------- |
-| s_area_code | INTEGER PK | 6 桁の小地域コード (`S_AREA`)                |
-| city_id     | TEXT FK   | `cities.city_id` への外部キー                |
+| sub_area_id | INTEGER PK AUTOINCREMENT | 自動採番の小地域 ID |
+| s_area_code | INTEGER FK | 6 桁の小地域コード (`S_AREA`)                |
+| city_id     | INTEGER FK | `cities.city_id` への外部キー                |
+| prefecture_id | INTEGER FK | `prefectures.prefecture_id` への外部キー |
 | s_name      | TEXT      | 小地域名 (`S_NAME`)                           |
+
+このテーブルでは `s_area_code`、`city_id`、`prefecture_id` の組み合わせが一意に
+なるよう制約を設けます。
 
 `HCODE`、`AREA`、`PERIMETER` などの追加属性は、必要に応じて `s_area_code` をキーとした補助テーブルに格納できます。
 
