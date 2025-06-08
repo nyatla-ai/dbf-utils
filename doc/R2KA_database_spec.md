@@ -1,52 +1,53 @@
-# R2KA Database Specification
+# R2KA データベース仕様
 
-This document describes a normalized schema for the R2KA shapefile attribute data
-stored in `dev/r2ka11.dbf`.
+このドキュメントでは、`dev/r2ka11.dbf` に含まれる R2KA シェープファイルの属性データを正規化して格納するためのスキーマを説明します。
 
-The dataset contains administrative area polygons from Saitama Prefecture.  Fields
-of interest are:
+このデータセットは埼玉県内の行政区域ポリゴンを含みます。主な項目は以下のとおりです。
 
-- `KEY_CODE` (C,11) – unique area identifier
-- `PREF` (C,2) – prefecture code
-- `CITY` (C,3) – city/ward/town code within the prefecture
-- `S_AREA` (C,6) – sub‑area code within the city
-- `PREF_NAME` (C,12) – prefecture name
-- `CITY_NAME` (C,16) – city/ward/town name
-- `S_NAME` (C,96) – sub‑area name
+- `KEY_CODE` (C,11) – 下記コードを連結した一意の識別子
+  （ソースデータにのみ存在し、正規化後のスキーマでは使用しません）
+- `PREF` (C,2) – 都道府県コード
+- `CITY` (C,3) – 市区町村コード
+- `S_AREA` (C,6) – 市区町村内の小地域コード
+- `PREF_NAME` (C,12) – 都道府県名
+- `CITY_NAME` (C,16) – 市区町村名
+- `S_NAME` (C,96) – 小地域名
 
-`KEY_CODE` is formed by concatenating `PREF`, `CITY` and `S_AREA`.  For example,
+`KEY_CODE` は `PREF`、`CITY`、`S_AREA` を連結して作られます。例:
 
 ```
 KEY_CODE   PREF  CITY  S_AREA  PREF_NAME  CITY_NAME      S_NAME
 11101002005 11    101   002005 埼玉県      さいたま市西区  三橋五丁目
 ```
 
-## Normalized Tables
+### 数値コードの扱い
+
+`pref_code`、`city_code`、`s_area_code` の各列はデータベース上では整数として保存されます。再びテキストとして出力する場合は、それぞれ 2 桁、3 桁、6 桁という元の桁数を維持できるよう先頭に 0 を補完してください。テキストデータを取り込む際には、桁数を確認したうえで先頭の 0 を除去して整数として保存する必要があります。
+
+## 正規化テーブル
 
 ### prefectures
-| column     | type    | details                    |
-|----------- |-------- |--------------------------- |
-| pref_code  | TEXT PK | two‑digit code (`PREF`)    |
-| pref_name  | TEXT    | name (`PREF_NAME`)         |
+| column     | type    | details                          |
+|----------- |-------- |--------------------------------- |
+| pref_code  | INTEGER PK | 2 桁の都道府県コード (`PREF`) |
+| pref_name  | TEXT    | 都道府県名 (`PREF_NAME`)       |
 
 ### cities
-| column    | type    | details                                 |
-|---------- |-------  |---------------------------------------- |
-| city_id   | TEXT PK | concatenation of `pref_code` and `city_code` |
-| pref_code | TEXT FK | references `prefectures.pref_code`      |
-| city_code | TEXT    | three‑digit code (`CITY`)               |
-| city_name | TEXT    | name (`CITY_NAME`)                      |
+| column    | type    | details                                             |
+|---------- |-------  |---------------------------------------------------- |
+| city_id   | TEXT PK | `pref_code` と `city_code` を連結した識別子         |
+| pref_code | INTEGER FK | `prefectures.pref_code` への外部キー            |
+| city_code | INTEGER    | 3 桁の市区町村コード (`CITY`)                     |
+| city_name | TEXT    | 市区町村名 (`CITY_NAME`)                             |
 
 ### sub_areas
-| column     | type    | details                                   |
-|----------- |-------  |------------------------------------------ |
-| key_code   | TEXT PK | full identifier (`KEY_CODE`)              |
-| city_id    | TEXT FK | references `cities.city_id`               |
-| s_area     | TEXT    | six‑digit code (`S_AREA`)                 |
-| s_name     | TEXT    | name (`S_NAME`)                           |
+| column      | type      | details                                       |
+|------------ |--------- |---------------------------------------------- |
+| s_area_code | INTEGER PK | 6 桁の小地域コード (`S_AREA`)                |
+| city_id     | TEXT FK   | `cities.city_id` への外部キー                |
+| s_name      | TEXT      | 小地域名 (`S_NAME`)                           |
 
-Additional attributes such as `HCODE`, `AREA`, `PERIMETER`, etc. may be stored in
-an auxiliary table linked by `key_code` if required.
+`HCODE`、`AREA`、`PERIMETER` などの追加属性は、必要に応じて `s_area_code` をキーとした補助テーブルに格納できます。
 
-This schema removes redundancy by storing each prefecture and city only once,
-while linking sub‑areas to their respective city via foreign keys.
+このスキーマでは、都道府県および市区町村の情報をそれぞれ一度だけ保存し、`city_id` 外部キーを通じて小地域と関連付けることで冗長性を排除します。
+
