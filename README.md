@@ -8,5 +8,5 @@ Directory structure:
 - `app/` - command line scripts built on top of `src`
 - `dev/` - development helpers and internal files
 - `doc/` - documentation
-- `app/import_r2ka.py` - import `dev/r2ka11.dbf` using the schema described in
+- `app/import_r2ka.py` - import R2KA CSV files using the schema described in
   `doc/R2KA_database_spec.md`
