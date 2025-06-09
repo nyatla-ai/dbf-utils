@@ -4,6 +4,7 @@ import sqlite3
 from pathlib import Path
 from typing import Dict, Iterable, Tuple, List
 import re
+from collections import defaultdict
 
 import csv
 from dbfread import DBF
@@ -89,6 +90,20 @@ class R2KAImporter:
                 for row in reader:
                     yield row
 
+    def _longest_common_prefix(self, strings: List[str]) -> str:
+        """Return the longest common prefix of the given strings."""
+        if not strings:
+            return ""
+        prefix = strings[0]
+        for s in strings[1:]:
+            i = 0
+            while i < len(prefix) and i < len(s) and prefix[i] == s[i]:
+                i += 1
+            prefix = prefix[:i]
+            if not prefix:
+                break
+        return prefix
+
     def import_csvs(self, csv_paths: Iterable[str]) -> tuple[int, int]:
         """Import one or more CSV files.
 
@@ -136,63 +151,79 @@ class R2KAImporter:
             cur.execute("SELECT s_area_code, city_id, prefecture_id FROM sub_areas")
             sub_area_cache: Dict[Tuple[int, int, int], int] = {(s, cid, pid): 1 for s, cid, pid in cur.fetchall()}
 
-            for pref_code, city_code, s_area_code, pref_name, city_name, s_name in records:
-                if pref_code not in pref_cache:
-                    cur.execute(
-                        "INSERT INTO prefectures (pref_code, pref_name) VALUES (?, ?)",
-                        (pref_code, pref_name),
-                    )
-                    pref_cache[pref_code] = cur.lastrowid
-                pref_id = pref_cache[pref_code]
+            grouped: Dict[Tuple[int, int, int], List[Tuple[int, int, int, str, str, str]]] = defaultdict(list)
+            for rec in records:
+                area_code = rec[2] // 100
+                grouped[(rec[0], rec[1], area_code)].append(rec)
 
-                city_key = (pref_code, city_code)
-                if city_key not in city_cache:
-                    cur.execute(
-                        "INSERT INTO cities (pref_code, city_code, city_name) VALUES (?, ?, ?)",
-                        (pref_code, city_code, city_name),
-                    )
-                    city_cache[city_key] = cur.lastrowid
-                city_id = city_cache[city_key]
+            for key, recs in grouped.items():
+                names = [r[5] for r in recs]
+                prefix = self._longest_common_prefix(names).strip()
 
-                area_code = s_area_code // 100
-                section_code = s_area_code % 100
-
-                if section_code == 0:
-                    area_name = s_name
-                    section_name = None
-                else:
-                    m = re.search(r"([一二三四五六七八九十百]+丁目)$", s_name)
-                    if m:
-                        area_name = s_name[: -len(m.group(1))]
-                        section_name = m.group(1)
-                    else:
-                        area_name = s_name
-                        section_name = None
-
-                if area_name not in area_cache:
-                    cur.execute("INSERT INTO areas (area_name) VALUES (?)", (area_name,))
-                    area_cache[area_name] = cur.lastrowid
-                area_id = area_cache[area_name]
-
-                if section_name is not None:
-                    if section_name not in section_cache:
+                for pref_code, city_code, s_area_code, pref_name, city_name, s_name in recs:
+                    if pref_code not in pref_cache:
                         cur.execute(
-                            "INSERT INTO sections (section_name) VALUES (?)",
-                            (section_name,),
+                            "INSERT INTO prefectures (pref_code, pref_name) VALUES (?, ?)",
+                            (pref_code, pref_name),
                         )
-                        section_cache[section_name] = cur.lastrowid
-                    section_id = section_cache[section_name]
-                else:
-                    section_id = None
+                        pref_cache[pref_code] = cur.lastrowid
+                    pref_id = pref_cache[pref_code]
 
-                sub_key = (s_area_code, city_id, pref_id)
-                if sub_key not in sub_area_cache:
-                    cur.execute(
-                        "INSERT INTO sub_areas (s_area_code, area_id, section_id, city_id, prefecture_id) VALUES (?, ?, ?, ?, ?)",
-                        (s_area_code, area_id, section_id, city_id, pref_id),
-                    )
-                    sub_area_cache[sub_key] = 1
-                    inserted += 1
+                    city_key = (pref_code, city_code)
+                    if city_key not in city_cache:
+                        cur.execute(
+                            "INSERT INTO cities (pref_code, city_code, city_name) VALUES (?, ?, ?)",
+                            (pref_code, city_code, city_name),
+                        )
+                        city_cache[city_key] = cur.lastrowid
+                    city_id = city_cache[city_key]
+
+                    section_code = s_area_code % 100
+
+                    if prefix:
+                        area_name = prefix
+                        if section_code == 0:
+                            section_name = None
+                        else:
+                            remainder = s_name[len(prefix):].strip()
+                            section_name = remainder or None
+                    else:
+                        if section_code == 0:
+                            area_name = s_name
+                            section_name = None
+                        else:
+                            m = re.search(r"([一二三四五六七八九十百]+丁目)$", s_name)
+                            if m:
+                                area_name = s_name[: -len(m.group(1))]
+                                section_name = m.group(1)
+                            else:
+                                area_name = s_name
+                                section_name = None
+
+                    if area_name not in area_cache:
+                        cur.execute("INSERT INTO areas (area_name) VALUES (?)", (area_name,))
+                        area_cache[area_name] = cur.lastrowid
+                    area_id = area_cache[area_name]
+
+                    if section_name is not None:
+                        if section_name not in section_cache:
+                            cur.execute(
+                                "INSERT INTO sections (section_name) VALUES (?)",
+                                (section_name,),
+                            )
+                            section_cache[section_name] = cur.lastrowid
+                        section_id = section_cache[section_name]
+                    else:
+                        section_id = None
+
+                    sub_key = (s_area_code, city_id, pref_id)
+                    if sub_key not in sub_area_cache:
+                        cur.execute(
+                            "INSERT INTO sub_areas (s_area_code, area_id, section_id, city_id, prefecture_id) VALUES (?, ?, ?, ?, ?)",
+                            (s_area_code, area_id, section_id, city_id, pref_id),
+                        )
+                        sub_area_cache[sub_key] = 1
+                        inserted += 1
 
             conn.commit()
 
