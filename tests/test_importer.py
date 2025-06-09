@@ -37,5 +37,17 @@ class TestR2KAImporterIntegration(unittest.TestCase):
             self.assertGreater(area_count, 0)
             self.assertGreater(section_count, 0)
 
+    def test_section_id_nullable(self):
+        dbf_path = Path('dev/r2ka11.dbf')
+        with tempfile.TemporaryDirectory() as tmpdir:
+            db_path = Path(tmpdir) / 'out.db'
+            importer = R2KAImporter(db_path=str(db_path))
+            importer.import_csvs([str(dbf_path)])
+            with sqlite3.connect(db_path) as conn:
+                cur = conn.cursor()
+                cur.execute('SELECT COUNT(*) FROM sub_areas WHERE section_id IS NULL')
+                null_count = cur.fetchone()[0]
+            self.assertGreater(null_count, 0)
+
 if __name__ == '__main__':
     unittest.main()
