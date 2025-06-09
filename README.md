@@ -4,6 +4,7 @@ CSV ファイルを正規化した形で SQLite データベースへ変換す�
 
 ## ディレクトリ構成
 
+
 - `src/` - 汎用ライブラリ
 - `app/` - コマンドラインスクリプト
 - `dev/` - 開発用ファイル
@@ -27,3 +28,11 @@ python app/build_database.py CSVディレクトリ 出力.db
 ```bash
 python app/import_r2ka.py 出力.db r2ka1.csv r2ka2.csv
 ```
+=======
+- `src/` - common source code
+- `app/` - command line scripts built on top of `src`
+- `dev/` - development helpers and internal files
+- `doc/` - documentation
+- `app/import_r2ka.py` - import R2KA CSV files using the schema described in
+  `doc/R2KA_database_spec.md`
+
