@@ -29,15 +29,11 @@ CSV から取り込む際、`PREF`、`CITY`、`S_AREA` の各値はそれぞれ 
 
 ### 字名と丁目名の抽出
 
-同じ字コードを持つレコードの `S_NAME` から先頭の共通部分を求め、それを字名とみなします。残りの部分が丁目名になります。たとえば
-
-```
-本町一丁目
-本町二丁目
-本町三丁目
-```
-
-という 3 行からは字名「本町」と丁目名「一丁目」「二丁目」「三丁目」を取得します。
+1. `S_AREA` は 4 桁の字コードと 2 桁の丁目番号から構成され、`int(S_AREA/100)` と `S_AREA % 100` でそれぞれ取得できます。
+2. 丁目番号が `0` の場合は丁目を持たないものとして扱い、`section_id` は `NULL` とします。このとき `S_NAME` 全体を `areas` のみへ登録します。
+3. 上記以外では `S_NAME` を正規表現 `([一二三四五六七八九十百]+丁目)$` で分割します。
+   - マッチする場合は先頭部分を `area_name`、一致した部分を `section_name` として登録します。
+   - マッチしない場合は丁目が存在しないものとして扱い、`section_id` を `NULL`、`areas` には `S_NAME` を登録します。
 
 ## 正規化テーブル
 
@@ -76,7 +72,7 @@ CSV から取り込む際、`PREF`、`CITY`、`S_AREA` の各値はそれぞれ 
 | sub_area_id   | INTEGER PK AUTOINCREMENT | 自動採番の小地域 ID |
 | s_area_code   | INTEGER                  | 6 桁の小地域コード (`S_AREA`) |
 | area_id       | INTEGER FK               | `areas.area_id` への外部キー |
-| section_id    | INTEGER FK               | `sections.section_id` への外部キー |
+| section_id    | INTEGER FK               | `sections.section_id` への外部キー (NULL 可) |
 | city_id       | INTEGER FK               | `cities.city_id` への外部キー |
 | prefecture_id | INTEGER FK               | `prefectures.prefecture_id` への外部キー |
 
