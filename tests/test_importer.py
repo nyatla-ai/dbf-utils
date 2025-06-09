@@ -47,7 +47,30 @@ class TestR2KAImporterIntegration(unittest.TestCase):
                 cur = conn.cursor()
                 cur.execute('SELECT COUNT(*) FROM sub_areas WHERE section_id IS NULL')
                 null_count = cur.fetchone()[0]
+
+                # s_area_code % 100 == 0 -> section_id should be NULL
+                cur.execute(
+                    'SELECT sa.section_id FROM sub_areas sa '\
+                    'JOIN areas a ON sa.area_id = a.area_id '\
+                    'WHERE sa.s_area_code = ? AND a.area_name = ?',
+                    (1000, '宮前町')
+                )
+                area_only_row = cur.fetchone()
+
+                # section_code != 0 but name without 丁目 -> section_id should be NULL
+                cur.execute(
+                    'SELECT sa.section_id FROM sub_areas sa '\
+                    'JOIN areas a ON sa.area_id = a.area_id '\
+                    'WHERE sa.s_area_code = ? AND a.area_name = ?',
+                    (3001, '大字指扇')
+                )
+                non_chome_row = cur.fetchone()
+
             self.assertGreater(null_count, 0)
+            self.assertIsNotNone(area_only_row)
+            self.assertIsNone(area_only_row[0])
+            self.assertIsNotNone(non_chome_row)
+            self.assertIsNone(non_chome_row[0])
 
 if __name__ == '__main__':
     unittest.main()
