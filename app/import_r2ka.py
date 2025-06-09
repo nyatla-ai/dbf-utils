@@ -14,14 +14,14 @@ from src.r2ka_importer import R2KAImporter
 
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(
-        description="Create database defined in R2KA_database_spec.md and import CSV files"
+        description="Create database defined in R2KA_database_spec.md and import CSV/DBF files"
     )
     parser.add_argument("db_path", type=Path, help="SQLite database path")
     parser.add_argument(
         "csv_files",
         nargs="+",
         type=str,
-        help="R2KA CSV files encoded in SJIS or glob patterns",
+        help="R2KA CSV or DBF files encoded in SJIS or glob patterns",
     )
     return parser.parse_args()
 

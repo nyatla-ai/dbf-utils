@@ -6,6 +6,7 @@ from typing import Dict, Iterable, Tuple
 import logging
 
 import csv
+from dbfread import DBF
 
 
 class R2KAImporter:
@@ -59,6 +60,18 @@ class R2KAImporter:
             )
         return int(trimmed)
 
+    def _iter_records(self, path: str) -> Iterable[dict[str, str]]:
+        """Yield records from a CSV or DBF file as dictionaries."""
+        if path.lower().endswith(".dbf"):
+            table = DBF(path, encoding="cp932")
+            for rec in table:
+                yield {k: (str(v) if v is not None else "") for k, v in rec.items()}
+        else:
+            with open(path, encoding="cp932", newline="") as f:
+                reader = csv.DictReader(f)
+                for row in reader:
+                    yield row
+
     def import_csvs(self, csv_paths: Iterable[str]) -> tuple[int, int]:
         """Import one or more CSV files.
 
@@ -85,9 +98,7 @@ class R2KAImporter:
             }
 
             for path in csv_paths:
-                with open(path, encoding="cp932", newline="") as f:
-                    reader = csv.DictReader(f)
-                    for row in reader:
+                for row in self._iter_records(path):
                         try:
                             pref_code = self._parse_numeric_code(row["PREF"], 2)
                             city_code = self._parse_numeric_code(row["CITY"], 3)
