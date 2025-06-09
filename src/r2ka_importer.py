@@ -2,8 +2,9 @@ from __future__ import annotations
 
 import sqlite3
 from pathlib import Path
-from typing import Dict, Iterable, Tuple
+from typing import Dict, Iterable, Tuple, List
 import logging
+from collections import defaultdict
 
 import csv
 from dbfread import DBF
@@ -39,12 +40,29 @@ class R2KAImporter:
         )
         cur.execute(
             """
+            CREATE TABLE IF NOT EXISTS areas (
+                area_id INTEGER PRIMARY KEY AUTOINCREMENT,
+                area_name TEXT UNIQUE NOT NULL
+            )
+            """
+        )
+        cur.execute(
+            """
+            CREATE TABLE IF NOT EXISTS sections (
+                section_id INTEGER PRIMARY KEY AUTOINCREMENT,
+                section_name TEXT UNIQUE NOT NULL
+            )
+            """
+        )
+        cur.execute(
+            """
             CREATE TABLE IF NOT EXISTS sub_areas (
                 sub_area_id INTEGER PRIMARY KEY AUTOINCREMENT,
                 s_area_code INTEGER NOT NULL,
+                area_id INTEGER NOT NULL REFERENCES areas(area_id),
+                section_id INTEGER NOT NULL REFERENCES sections(section_id),
                 city_id INTEGER NOT NULL REFERENCES cities(city_id),
                 prefecture_id INTEGER NOT NULL REFERENCES prefectures(prefecture_id),
-                s_name TEXT NOT NULL,
                 UNIQUE(s_area_code, city_id, prefecture_id)
             )
             """
@@ -80,6 +98,43 @@ class R2KAImporter:
         attempted = 0
         inserted = 0
 
+        records: List[Tuple[int, int, int, str, str, str]] = []
+
+        for path in csv_paths:
+            for row in self._iter_records(path):
+                try:
+                    pref_code = self._parse_numeric_code(row["PREF"], 2)
+                    city_code = self._parse_numeric_code(row["CITY"], 3)
+                    s_area_code = self._parse_numeric_code(row["S_AREA"], 6)
+                except ValueError as e:
+                    logging.warning("Skipping row due to invalid code: %s", e)
+                    continue
+
+                pref_name = row["PREF_NAME"].strip()
+                city_name = row["CITY_NAME"].strip()
+                s_name = row["S_NAME"].strip()
+
+                records.append(
+                    (pref_code, city_code, s_area_code, pref_name, city_name, s_name)
+                )
+                attempted += 1
+
+        # Determine common prefix for each 4-digit area code
+        prefix_map: Dict[int, str] = {}
+        for _, _, s_area_code, _, _, s_name in records:
+            code = s_area_code // 100
+            if code not in prefix_map:
+                prefix_map[code] = s_name
+            else:
+                current = prefix_map[code]
+                # compute common prefix
+                i = 0
+                for a, b in zip(current, s_name):
+                    if a != b:
+                        break
+                    i += 1
+                prefix_map[code] = current[:i]
+
         with sqlite3.connect(self.db_path) as conn:
             self._create_schema(conn)
             cur = conn.cursor()
@@ -88,56 +143,57 @@ class R2KAImporter:
             pref_cache: Dict[int, int] = {code: pid for code, pid in cur.fetchall()}
 
             cur.execute("SELECT pref_code, city_code, city_id FROM cities")
-            city_cache: Dict[Tuple[int, int], int] = {
-                (p, c): cid for p, c, cid in cur.fetchall()
-            }
+            city_cache: Dict[Tuple[int, int], int] = {(p, c): cid for p, c, cid in cur.fetchall()}
+
+            cur.execute("SELECT area_name, area_id FROM areas")
+            area_cache: Dict[str, int] = {n: aid for n, aid in cur.fetchall()}
+
+            cur.execute("SELECT section_name, section_id FROM sections")
+            section_cache: Dict[str, int] = {n: sid for n, sid in cur.fetchall()}
 
             cur.execute("SELECT s_area_code, city_id, prefecture_id FROM sub_areas")
-            sub_area_cache: Dict[Tuple[int, int, int], int] = {
-                (s, cid, pid): 1 for s, cid, pid in cur.fetchall()
-            }
+            sub_area_cache: Dict[Tuple[int, int, int], int] = {(s, cid, pid): 1 for s, cid, pid in cur.fetchall()}
 
-            for path in csv_paths:
-                for row in self._iter_records(path):
-                        try:
-                            pref_code = self._parse_numeric_code(row["PREF"], 2)
-                            city_code = self._parse_numeric_code(row["CITY"], 3)
-                            s_area_code = self._parse_numeric_code(row["S_AREA"], 6)
-                        except ValueError as e:
-                            logging.warning("Skipping row due to invalid code: %s", e)
-                            continue
+            for pref_code, city_code, s_area_code, pref_name, city_name, s_name in records:
+                if pref_code not in pref_cache:
+                    cur.execute(
+                        "INSERT INTO prefectures (pref_code, pref_name) VALUES (?, ?)",
+                        (pref_code, pref_name),
+                    )
+                    pref_cache[pref_code] = cur.lastrowid
+                pref_id = pref_cache[pref_code]
 
-                        pref_name = row["PREF_NAME"].strip()
-                        city_name = row["CITY_NAME"].strip()
-                        s_name = row["S_NAME"].strip()
+                city_key = (pref_code, city_code)
+                if city_key not in city_cache:
+                    cur.execute(
+                        "INSERT INTO cities (pref_code, city_code, city_name) VALUES (?, ?, ?)",
+                        (pref_code, city_code, city_name),
+                    )
+                    city_cache[city_key] = cur.lastrowid
+                city_id = city_cache[city_key]
 
-                        attempted += 1
+                area_code = s_area_code // 100
+                area_name = prefix_map.get(area_code, "")
+                section_name = s_name[len(area_name):]
 
-                        if pref_code not in pref_cache:
-                            cur.execute(
-                                "INSERT INTO prefectures (pref_code, pref_name) VALUES (?, ?)",
-                                (pref_code, pref_name),
-                            )
-                            pref_cache[pref_code] = cur.lastrowid
-                        pref_id = pref_cache[pref_code]
+                if area_name not in area_cache:
+                    cur.execute("INSERT INTO areas (area_name) VALUES (?)", (area_name,))
+                    area_cache[area_name] = cur.lastrowid
+                area_id = area_cache[area_name]
 
-                        city_key = (pref_code, city_code)
-                        if city_key not in city_cache:
-                            cur.execute(
-                                "INSERT INTO cities (pref_code, city_code, city_name) VALUES (?, ?, ?)",
-                                (pref_code, city_code, city_name),
-                            )
-                            city_cache[city_key] = cur.lastrowid
-                        city_id = city_cache[city_key]
+                if section_name not in section_cache:
+                    cur.execute("INSERT INTO sections (section_name) VALUES (?)", (section_name,))
+                    section_cache[section_name] = cur.lastrowid
+                section_id = section_cache[section_name]
 
-                        sub_key = (s_area_code, city_id, pref_id)
-                        if sub_key not in sub_area_cache:
-                            cur.execute(
-                                "INSERT INTO sub_areas (s_area_code, city_id, prefecture_id, s_name) VALUES (?, ?, ?, ?)",
-                                (s_area_code, city_id, pref_id, s_name),
-                            )
-                            sub_area_cache[sub_key] = 1
-                            inserted += 1
+                sub_key = (s_area_code, city_id, pref_id)
+                if sub_key not in sub_area_cache:
+                    cur.execute(
+                        "INSERT INTO sub_areas (s_area_code, area_id, section_id, city_id, prefecture_id) VALUES (?, ?, ?, ?, ?)",
+                        (s_area_code, area_id, section_id, city_id, pref_id),
+                    )
+                    sub_area_cache[sub_key] = 1
+                    inserted += 1
 
             conn.commit()
 
