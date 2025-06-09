@@ -3,6 +3,7 @@ from __future__ import annotations
 import sqlite3
 from pathlib import Path
 from typing import Dict, Iterable, Tuple
+import logging
 
 import csv
 
@@ -49,6 +50,15 @@ class R2KAImporter:
         )
         conn.commit()
 
+    def _parse_numeric_code(self, value: str, length: int) -> int:
+        """Validate and convert a zero padded numeric code to int."""
+        trimmed = value.strip()
+        if not trimmed.isdigit() or len(trimmed) != length:
+            raise ValueError(
+                f"Expected {length}-digit numeric code, got {value!r}"
+            )
+        return int(trimmed)
+
     def import_csvs(self, csv_paths: Iterable[str]) -> tuple[int, int]:
         """Import one or more CSV files.
 
@@ -78,13 +88,19 @@ class R2KAImporter:
                 with open(path, encoding="cp932", newline="") as f:
                     reader = csv.DictReader(f)
                     for row in reader:
-                        attempted += 1
-                        pref_code = int(row["PREF"])
-                        city_code = int(row["CITY"])
-                        s_area_code = int(row["S_AREA"])
+                        try:
+                            pref_code = self._parse_numeric_code(row["PREF"], 2)
+                            city_code = self._parse_numeric_code(row["CITY"], 3)
+                            s_area_code = self._parse_numeric_code(row["S_AREA"], 6)
+                        except ValueError as e:
+                            logging.warning("Skipping row due to invalid code: %s", e)
+                            continue
+
                         pref_name = row["PREF_NAME"].strip()
                         city_name = row["CITY_NAME"].strip()
                         s_name = row["S_NAME"].strip()
+
+                        attempted += 1
 
                         if pref_code not in pref_cache:
                             cur.execute(
