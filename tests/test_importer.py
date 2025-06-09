@@ -2,6 +2,10 @@ import sqlite3
 import tempfile
 from pathlib import Path
 import unittest
+import sys
+import os
+
+sys.path.append(os.path.join(os.path.dirname(__file__), '..'))
 
 from src.r2ka_importer import R2KAImporter
 
@@ -23,9 +27,15 @@ class TestR2KAImporterIntegration(unittest.TestCase):
                 city_count = cur.fetchone()[0]
                 cur.execute('SELECT COUNT(*) FROM sub_areas')
                 sub_count = cur.fetchone()[0]
+                cur.execute('SELECT COUNT(*) FROM areas')
+                area_count = cur.fetchone()[0]
+                cur.execute('SELECT COUNT(*) FROM sections')
+                section_count = cur.fetchone()[0]
             self.assertGreater(pref_count, 0)
             self.assertGreater(city_count, 0)
             self.assertGreater(sub_count, 0)
+            self.assertGreater(area_count, 0)
+            self.assertGreater(section_count, 0)
 
 if __name__ == '__main__':
     unittest.main()
