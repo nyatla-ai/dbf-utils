@@ -33,7 +33,11 @@ def main() -> None:
         matches = glob.glob(pattern)
         paths.extend(matches if matches else [pattern])
     importer = R2KAImporter(db_path=str(args.db_path))
-    attempted, inserted = importer.import_csvs(paths)
+    try:
+        attempted, inserted = importer.import_csvs(paths)
+    except ValueError as e:
+        print(e)
+        sys.exit(1)
     print(f"Processed {attempted} rows, inserted {inserted} new records.")
     print(f"Database saved to {args.db_path}")
 

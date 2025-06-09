@@ -3,7 +3,6 @@ from __future__ import annotations
 import sqlite3
 from pathlib import Path
 from typing import Dict, Iterable, Tuple, List
-import logging
 import re
 
 import csv
@@ -107,8 +106,7 @@ class R2KAImporter:
                     city_code = self._parse_numeric_code(row["CITY"], 3)
                     s_area_code = self._parse_numeric_code(row["S_AREA"], 6)
                 except ValueError as e:
-                    logging.warning("Skipping row due to invalid code: %s", e)
-                    continue
+                    raise ValueError(f"Invalid record {row}: {e}") from e
 
                 pref_name = row["PREF_NAME"].strip()
                 city_name = row["CITY_NAME"].strip()
