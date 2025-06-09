@@ -4,7 +4,7 @@ import sqlite3
 from pathlib import Path
 from typing import Dict, Iterable, Tuple, List
 import logging
-from collections import defaultdict
+import re
 
 import csv
 from dbfread import DBF
@@ -60,7 +60,7 @@ class R2KAImporter:
                 sub_area_id INTEGER PRIMARY KEY AUTOINCREMENT,
                 s_area_code INTEGER NOT NULL,
                 area_id INTEGER NOT NULL REFERENCES areas(area_id),
-                section_id INTEGER NOT NULL REFERENCES sections(section_id),
+                section_id INTEGER REFERENCES sections(section_id),
                 city_id INTEGER NOT NULL REFERENCES cities(city_id),
                 prefecture_id INTEGER NOT NULL REFERENCES prefectures(prefecture_id),
                 UNIQUE(s_area_code, city_id, prefecture_id)
@@ -119,22 +119,6 @@ class R2KAImporter:
                 )
                 attempted += 1
 
-        # Determine common prefix for each 4-digit area code
-        prefix_map: Dict[int, str] = {}
-        for _, _, s_area_code, _, _, s_name in records:
-            code = s_area_code // 100
-            if code not in prefix_map:
-                prefix_map[code] = s_name
-            else:
-                current = prefix_map[code]
-                # compute common prefix
-                i = 0
-                for a, b in zip(current, s_name):
-                    if a != b:
-                        break
-                    i += 1
-                prefix_map[code] = current[:i]
-
         with sqlite3.connect(self.db_path) as conn:
             self._create_schema(conn)
             cur = conn.cursor()
@@ -173,18 +157,35 @@ class R2KAImporter:
                 city_id = city_cache[city_key]
 
                 area_code = s_area_code // 100
-                area_name = prefix_map.get(area_code, "")
-                section_name = s_name[len(area_name):]
+                section_code = s_area_code % 100
+
+                if section_code == 0:
+                    area_name = s_name
+                    section_name = None
+                else:
+                    m = re.search(r"([一二三四五六七八九十百]+丁目)$", s_name)
+                    if m:
+                        area_name = s_name[: -len(m.group(1))]
+                        section_name = m.group(1)
+                    else:
+                        area_name = s_name
+                        section_name = None
 
                 if area_name not in area_cache:
                     cur.execute("INSERT INTO areas (area_name) VALUES (?)", (area_name,))
                     area_cache[area_name] = cur.lastrowid
                 area_id = area_cache[area_name]
 
-                if section_name not in section_cache:
-                    cur.execute("INSERT INTO sections (section_name) VALUES (?)", (section_name,))
-                    section_cache[section_name] = cur.lastrowid
-                section_id = section_cache[section_name]
+                if section_name is not None:
+                    if section_name not in section_cache:
+                        cur.execute(
+                            "INSERT INTO sections (section_name) VALUES (?)",
+                            (section_name,),
+                        )
+                        section_cache[section_name] = cur.lastrowid
+                    section_id = section_cache[section_name]
+                else:
+                    section_id = None
 
                 sub_key = (s_area_code, city_id, pref_id)
                 if sub_key not in sub_area_cache:
