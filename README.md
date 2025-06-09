@@ -26,7 +26,7 @@ python app/build_database.py CSVディレクトリ 出力.db
 ### R2KA CSV の取り込み
 
 ```bash
-python app/import_r2ka.py 出力.db r2ka1.csv r2ka2.csv
+python app/import_r2ka.py 出力.db ./data/*.csv
 ```
 =======
 - `src/` - common source code

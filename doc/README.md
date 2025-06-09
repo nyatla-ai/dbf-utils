@@ -13,7 +13,7 @@ python app/build_database.py CSVディレクトリ 出力先.db
 ### R2KA CSV を取り込む場合
 
 ```bash
-python app/import_r2ka.py 出力.db r2ka1.csv r2ka2.csv
+python app/import_r2ka.py 出力.db ./data/*.csv
 ```
 
 CSV は SJIS (cp932) でエンコードされている想定です。処理後、データベース内には UTF-8 として保存されます。
