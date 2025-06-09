@@ -30,3 +30,5 @@ python app/build_database.py CSVディレクトリ 出力.db
 python app/import_r2ka.py 出力.db ./data/*.{csv,dbf}
 ```
 
+もし CSV 内に登録できないレコードが含まれている場合は、その内容を表示して処理を中断します。
+
