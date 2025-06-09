@@ -1,11 +1,19 @@
-# CSV to SQLite Converter
+# CSV から SQLite への変換
 
-This project provides a simple system for converting multiple CSV files into a normalized SQLite database. The main components are located in the `src` package and a script in `app` that performs the conversion.
+複数の CSV ファイルを正規化した SQLite データベースに変換する手順をまとめています。処理を行うモジュールは `src` ディレクトリにあり、`app` 配下のスクリプトから利用できます。
 
-## Usage
+## 使い方
 
 ```bash
-python app/build_database.py path/to/csv_directory output.db
+python app/build_database.py CSVディレクトリ 出力先.db
 ```
 
-The script reads all `*.csv` files inside the specified directory and creates a SQLite database. Columns that appear across multiple CSV files are normalized into lookup tables.
+指定したディレクトリ内の `*.csv` を読み込み、共通する列を抽出してルックアップテーブルを生成しながら SQLite データベースを作成します。
+
+### R2KA CSV を取り込む場合
+
+```bash
+python app/import_r2ka.py 出力.db r2ka1.csv r2ka2.csv
+```
+
+CSV は SJIS (cp932) でエンコードされている想定です。処理後、データベース内には UTF-8 として保存されます。

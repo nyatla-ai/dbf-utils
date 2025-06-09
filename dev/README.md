@@ -1,1 +1,1 @@
-Internal development files can be stored here.
+開発用のファイルをここに配置します。

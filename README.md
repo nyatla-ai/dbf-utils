@@ -1,10 +1,29 @@
 # Estat SHP Utils
 
-This repository contains tools for converting CSV files into an SQLite database in a normalized form.
+CSV ファイルを正規化した形で SQLite データベースへ変換するためのツール集です。
 
-Directory structure:
+## ディレクトリ構成
 
-- `src/` - common source code
-- `app/` - command line scripts built on top of `src`
-- `dev/` - development helpers and internal files
-- `doc/` - documentation
+- `src/` - 汎用ライブラリ
+- `app/` - コマンドラインスクリプト
+- `dev/` - 開発用ファイル
+- `doc/` - ドキュメント
+
+### 主なスクリプト
+
+- `app/build_database.py` - 任意の CSV 群を 1 つのデータベースにまとめます。
+- `app/import_r2ka.py` - `doc/R2KA_database_spec.md` のスキーマに従って R2KA 形式の CSV を取り込みます。
+
+## 使用例
+
+### 汎用 CSV 取り込み
+
+```bash
+python app/build_database.py CSVディレクトリ 出力.db
+```
+
+### R2KA CSV の取り込み
+
+```bash
+python app/import_r2ka.py 出力.db r2ka1.csv r2ka2.csv
+```
