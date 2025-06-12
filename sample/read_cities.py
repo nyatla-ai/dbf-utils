@@ -7,7 +7,10 @@ import argparse
 import sqlite3
 from pathlib import Path
 from typing import Dict, Tuple
+import os
+import sys
 
+sys.path.append(os.path.join(os.path.dirname(__file__), '..'))
 
 def load_city_mapping(db_path: Path) -> Dict[int, Tuple[int, int]]:
     """Return a mapping from city_id to (pref_code, city_code)."""
