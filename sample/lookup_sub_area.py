@@ -10,6 +10,7 @@ import sys
 
 sys.path.append(os.path.join(os.path.dirname(__file__), '..'))
 
+from src.database import Database
 from src.r2ka_api import SubAreaIdSelector
 
 
@@ -21,7 +22,8 @@ def main() -> None:
     parser.add_argument("s_area_code", type=int, help="Sub area code")
     args = parser.parse_args()
 
-    with SubAreaIdSelector(args.db_path) as selector:
+    with Database(args.db_path) as db:
+        selector = SubAreaIdSelector(db)
         sub_area_id = selector.get_sub_area_id(
             args.pref_code, args.city_code, args.s_area_code
         )

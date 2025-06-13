@@ -4,22 +4,23 @@ import sqlite3
 from pathlib import Path
 from typing import Dict, Optional, Tuple
 
+from .database import Database
 
-def get_city_id(db_path: str | Path, pref_code: int, city_code: int) -> Optional[int]:
+
+def get_city_id(db: Database, pref_code: int, city_code: int) -> Optional[int]:
     """Return city_id for given prefecture and city codes or None."""
     query = (
         "SELECT city_id FROM cities "
         "WHERE pref_code = ? AND city_code = ? "
         "LIMIT 1"
     )
-    with sqlite3.connect(str(db_path)) as conn:
-        cur = conn.execute(query, (pref_code, city_code))
-        row = cur.fetchone()
+    cur = db.conn.execute(query, (pref_code, city_code))
+    row = cur.fetchone()
     return int(row[0]) if row else None
 
 
 def get_sub_area_id(
-    db_path: str | Path,
+    db: Database,
     pref_code: int,
     city_code: int,
     s_area_code: int,
@@ -33,23 +34,21 @@ def get_sub_area_id(
         "WHERE p.pref_code = ? AND c.city_code = ? AND sa.s_area_code = ? "
         "LIMIT 1"
     )
-    with sqlite3.connect(str(db_path)) as conn:
-        cur = conn.execute(query, (pref_code, city_code, s_area_code))
-        row = cur.fetchone()
+    cur = db.conn.execute(query, (pref_code, city_code, s_area_code))
+    row = cur.fetchone()
     return int(row[0]) if row else None
 
 
 class SubAreaIdSelector:
     """Cache-aware helper for looking up ``sub_area_id`` values."""
 
-    def __init__(self, db_path: str | Path) -> None:
-        self.db_path = Path(db_path)
-        self._conn = sqlite3.connect(str(self.db_path))
+    def __init__(self, db: Database) -> None:
+        self._db = db
+        self._conn = db.conn
         self._cache: Dict[Tuple[int, int, int], Optional[int]] = {}
 
     def close(self) -> None:
-        if self._conn:
-            self._conn.close()
+        pass
 
     def __enter__(self) -> "SubAreaIdSelector":
         return self
@@ -82,14 +81,13 @@ class SubAreaIdSelector:
 class CityIdSelector:
     """Cache-aware helper for looking up ``city_id`` values."""
 
-    def __init__(self, db_path: str | Path) -> None:
-        self.db_path = Path(db_path)
-        self._conn = sqlite3.connect(str(self.db_path))
+    def __init__(self, db: Database) -> None:
+        self._db = db
+        self._conn = db.conn
         self._cache: Dict[Tuple[int, int], Optional[int]] = {}
 
     def close(self) -> None:
-        if self._conn:
-            self._conn.close()
+        pass
 
     def __enter__(self) -> "CityIdSelector":
         return self
@@ -114,10 +112,30 @@ class CityIdSelector:
         return result
 
 
+class SubAreaReader:
+    """Return total row count and records within a range."""
+
+    def __init__(self, db: Database) -> None:
+        self._db = db
+
+    def fetch(self, offset: int = 0, limit: int = 100) -> tuple[int, list[dict[str, object]]]:
+        """Return total rows and a slice of records from ``sub_areas``."""
+        total = self._db.conn.execute("SELECT COUNT(*) FROM sub_areas").fetchone()[0]
+        cur = self._db.conn.execute(
+            "SELECT sub_area_id, s_area_code, area_id, section_id, city_id, prefecture_id "
+            "FROM sub_areas ORDER BY sub_area_id LIMIT ? OFFSET ?",
+            (limit, offset),
+        )
+        cols = [d[0] for d in cur.description]
+        records = [dict(zip(cols, row)) for row in cur.fetchall()]
+        return int(total), records
+
+
 __all__ = [
     "get_city_id",
     "CityIdSelector",
     "get_sub_area_id",
     "SubAreaIdSelector",
+    "SubAreaReader",
 ]
 
