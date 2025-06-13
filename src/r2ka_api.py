@@ -113,14 +113,18 @@ class CityIdSelector:
 
 
 class SubAreaReader:
-    """Return total row count and records within a range."""
+    """Read records from ``sub_areas`` table."""
 
     def __init__(self, db: Database) -> None:
         self._db = db
 
-    def fetch(self, offset: int = 0, limit: int = 100) -> tuple[int, list[dict[str, object]]]:
-        """Return total rows and a slice of records from ``sub_areas``."""
+    def count(self) -> int:
+        """Return total number of rows in ``sub_areas``."""
         total = self._db.conn.execute("SELECT COUNT(*) FROM sub_areas").fetchone()[0]
+        return int(total)
+
+    def fetch(self, offset: int = 0, limit: int = 100) -> list[dict[str, object]]:
+        """Return a slice of records from ``sub_areas``."""
         cur = self._db.conn.execute(
             "SELECT sub_area_id, s_area_code, area_id, section_id, city_id, prefecture_id "
             "FROM sub_areas ORDER BY sub_area_id LIMIT ? OFFSET ?",
@@ -128,7 +132,7 @@ class SubAreaReader:
         )
         cols = [d[0] for d in cur.description]
         records = [dict(zip(cols, row)) for row in cur.fetchall()]
-        return int(total), records
+        return records
 
 
 __all__ = [
