@@ -3,12 +3,9 @@ from __future__ import annotations
 
 import argparse
 from pathlib import Path
-import os
-import sys
 
-sys.path.append(os.path.join(os.path.dirname(__file__), '..'))
 
-from src.csv_to_sqlite import CsvToSqliteConverter
+from estat_shp_utils.csv_to_sqlite import CsvToSqliteConverter
 
 
 def parse_args() -> argparse.Namespace:

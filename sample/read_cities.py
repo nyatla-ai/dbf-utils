@@ -6,12 +6,9 @@ from __future__ import annotations
 import argparse
 from pathlib import Path
 from typing import Dict, Tuple
-import os
-import sys
 
-sys.path.append(os.path.join(os.path.dirname(__file__), '..'))
 
-from src.database import Database
+from estat_shp_utils.database import Database
 
 def load_city_mapping(db_path: Path) -> Dict[int, Tuple[int, int]]:
     """Return a mapping from city_id to (pref_code, city_code)."""
