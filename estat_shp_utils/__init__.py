@@ -6,6 +6,7 @@ from .r2ka_api import (
     CityIdSelector,
     SubAreaIdSelector,
     SubAreaReader,
+    CodesViewReader,
 )
 from .r2ka_importer import R2KAImporter
 
@@ -19,5 +20,6 @@ __all__ = [
     "CityIdSelector",
     "SubAreaIdSelector",
     "SubAreaReader",
+    "CodesViewReader",
     "R2KAImporter",
 ]
