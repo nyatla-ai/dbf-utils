@@ -9,6 +9,7 @@ import sys
 
 sys.path.append(os.path.join(os.path.dirname(__file__), '..'))
 
+from src.database import Database
 from src.r2ka_importer import R2KAImporter
 
 
@@ -32,14 +33,15 @@ def main() -> None:
     for pattern in args.csv_files:
         matches = glob.glob(pattern)
         paths.extend(matches if matches else [pattern])
-    importer = R2KAImporter(db_path=str(args.db_path))
-    try:
-        attempted, inserted = importer.import_csvs(paths)
-    except ValueError as e:
-        print(e)
-        sys.exit(1)
-    print(f"Processed {attempted} rows, inserted {inserted} new records.")
-    print(f"Database saved to {args.db_path}")
+    with Database(args.db_path) as db:
+        importer = R2KAImporter(db)
+        try:
+            attempted, inserted = importer.import_csvs(paths)
+        except ValueError as e:
+            print(e)
+            sys.exit(1)
+        print(f"Processed {attempted} rows, inserted {inserted} new records.")
+        print(f"Database saved to {args.db_path}")
 
 
 if __name__ == "__main__":

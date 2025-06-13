@@ -7,6 +7,7 @@ import os
 
 sys.path.append(os.path.join(os.path.dirname(__file__), '..'))
 
+from src.database import Database
 from src.r2ka_importer import R2KAImporter
 
 class TestR2KAImporterIntegration(unittest.TestCase):
@@ -14,12 +15,13 @@ class TestR2KAImporterIntegration(unittest.TestCase):
         dbf_path = Path('dev/r2ka11.dbf')
         with tempfile.TemporaryDirectory() as tmpdir:
             db_path = Path(tmpdir) / 'out.db'
-            importer = R2KAImporter(db_path=str(db_path))
-            attempted, inserted = importer.import_csvs([str(dbf_path)])
-            self.assertTrue(db_path.exists(), 'Database file should be created')
-            self.assertGreater(attempted, 0)
-            self.assertGreater(inserted, 0)
-            with sqlite3.connect(db_path) as conn:
+            with Database(db_path) as db:
+                importer = R2KAImporter(db)
+                attempted, inserted = importer.import_csvs([str(dbf_path)])
+                self.assertTrue(db_path.exists(), 'Database file should be created')
+                self.assertGreater(attempted, 0)
+                self.assertGreater(inserted, 0)
+                conn = db.conn
                 cur = conn.cursor()
                 cur.execute('SELECT COUNT(*) FROM prefectures')
                 pref_count = cur.fetchone()[0]
@@ -41,9 +43,10 @@ class TestR2KAImporterIntegration(unittest.TestCase):
         dbf_path = Path('dev/r2ka11.dbf')
         with tempfile.TemporaryDirectory() as tmpdir:
             db_path = Path(tmpdir) / 'out.db'
-            importer = R2KAImporter(db_path=str(db_path))
-            importer.import_csvs([str(dbf_path)])
-            with sqlite3.connect(db_path) as conn:
+            with Database(db_path) as db:
+                importer = R2KAImporter(db)
+                importer.import_csvs([str(dbf_path)])
+                conn = db.conn
                 cur = conn.cursor()
                 cur.execute('SELECT COUNT(*) FROM sub_areas WHERE section_id IS NULL')
                 null_count = cur.fetchone()[0]

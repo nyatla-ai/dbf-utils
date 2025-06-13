@@ -10,6 +10,7 @@ import sys
 
 sys.path.append(os.path.join(os.path.dirname(__file__), '..'))
 
+from src.database import Database
 from src.r2ka_api import CityIdSelector
 
 
@@ -20,7 +21,8 @@ def main() -> None:
     parser.add_argument("city_code", type=int, help="City code")
     args = parser.parse_args()
 
-    with CityIdSelector(args.db_path) as selector:
+    with Database(args.db_path) as db:
+        selector = CityIdSelector(db)
         city_id = selector.get_city_id(args.pref_code, args.city_code)
         if city_id is None:
             print("Not found")

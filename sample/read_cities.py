@@ -4,7 +4,6 @@
 from __future__ import annotations
 
 import argparse
-import sqlite3
 from pathlib import Path
 from typing import Dict, Tuple
 import os
@@ -12,11 +11,13 @@ import sys
 
 sys.path.append(os.path.join(os.path.dirname(__file__), '..'))
 
+from src.database import Database
+
 def load_city_mapping(db_path: Path) -> Dict[int, Tuple[int, int]]:
     """Return a mapping from city_id to (pref_code, city_code)."""
     mapping: Dict[int, Tuple[int, int]] = {}
-    with sqlite3.connect(db_path) as conn:
-        cur = conn.cursor()
+    with Database(db_path) as db:
+        cur = db.conn.cursor()
         for row in cur.execute(
             "SELECT city_id, pref_code, city_code FROM cities ORDER BY city_id"
         ):
