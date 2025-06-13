@@ -78,3 +78,14 @@ CSV から取り込む際、`PREF`、`CITY`、`S_AREA` の各値はそれぞれ 
 
 `sub_areas` では `s_area_code`、`city_id`、`prefecture_id` の組み合わせが一意となるよう制約を設けます。追加属性は `s_area_code` をキーとした補助テーブルに格納してください。
 
+### codes_view
+`sub_areas` と `cities`、`prefectures` を結合した読み取り専用ビューです。各コードを連結した `jis_code` 列を含みます。
+
+| column | type | details |
+|--------|------|--------------------------------------------------------------------------------|
+| sub_area_id | INTEGER | `sub_areas.sub_area_id` |
+| prefecture_code | INTEGER | `prefectures.pref_code` |
+| city_code | INTEGER | `cities.city_code` |
+| s_area_code | INTEGER | `sub_areas.s_area_code` |
+| jis_code | INTEGER | `((prefecture_code*1000)+city_code)*1000000+s_area_code` |
+

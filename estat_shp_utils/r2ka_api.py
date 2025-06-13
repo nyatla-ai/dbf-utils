@@ -145,11 +145,45 @@ class SubAreaReader:
         return records
 
 
+class CodesViewReader:
+    """Read records from ``codes_view`` view."""
+
+    def __init__(self, db: Database) -> None:
+        self._db = db
+
+    def count(self) -> int:
+        """Return total number of rows in ``codes_view``."""
+        total = self._db.conn.execute("SELECT COUNT(*) FROM codes_view").fetchone()[0]
+        return int(total)
+
+    def fetch(self, offset: int = 0, limit: int = 100) -> list[dict[str, object]]:
+        """Return a slice of records from ``codes_view``."""
+        cur = self._db.conn.execute(
+            "SELECT sub_area_id, prefecture_code, city_code, s_area_code, jis_code "
+            "FROM codes_view ORDER BY sub_area_id LIMIT ? OFFSET ?",
+            (limit, offset),
+        )
+        cols = [d[0] for d in cur.description]
+        records = [dict(zip(cols, row)) for row in cur.fetchall()]
+        return records
+
+    def fetch_all(self) -> list[dict[str, object]]:
+        """Return all records from ``codes_view``."""
+        cur = self._db.conn.execute(
+            "SELECT sub_area_id, prefecture_code, city_code, s_area_code, jis_code "
+            "FROM codes_view ORDER BY sub_area_id"
+        )
+        cols = [d[0] for d in cur.description]
+        records = [dict(zip(cols, row)) for row in cur.fetchall()]
+        return records
+
+
 __all__ = [
     "get_city_id",
     "CityIdSelector",
     "get_sub_area_id",
     "SubAreaIdSelector",
     "SubAreaReader",
+    "CodesViewReader",
 ]
 

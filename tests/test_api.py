@@ -9,6 +9,7 @@ from estat_shp_utils.r2ka_api import (
     CityIdSelector,
     SubAreaIdSelector,
     SubAreaReader,
+    CodesViewReader,
 )
 
 
@@ -82,3 +83,21 @@ def test_sub_area_reader():
             assert 0 < len(rows) <= 5
             assert len(all_rows) == total
             assert all('sub_area_id' in r for r in rows)
+
+
+def test_codes_view_reader():
+    dbf_path = Path('dev/r2ka11.dbf')
+    with tempfile.TemporaryDirectory() as tmpdir:
+        db_path = Path(tmpdir) / 'out.db'
+        with Database(db_path) as db:
+            importer = R2KAImporter(db)
+            importer.import_csvs([str(dbf_path)])
+
+            reader = CodesViewReader(db)
+            total = reader.count()
+            rows = reader.fetch(0, 5)
+            assert total > 0
+            assert 0 < len(rows) <= 5
+            for r in rows:
+                expect = ((r['prefecture_code'] * 1000 + r['city_code']) * 1000000 + r['s_area_code'])
+                assert r['jis_code'] == expect
