@@ -1,14 +1,15 @@
 import sqlite3
 import tempfile
 from pathlib import Path
-import os
-import sys
 
-sys.path.append(os.path.join(os.path.dirname(__file__), '..'))
 
-from src.database import Database
-from src.r2ka_importer import R2KAImporter
-from src.r2ka_api import CityIdSelector, SubAreaIdSelector, SubAreaReader
+from estat_shp_utils.database import Database
+from estat_shp_utils.r2ka_importer import R2KAImporter
+from estat_shp_utils.r2ka_api import (
+    CityIdSelector,
+    SubAreaIdSelector,
+    SubAreaReader,
+)
 
 
 def test_get_sub_area_id():
