@@ -76,6 +76,8 @@ def test_sub_area_reader():
             reader = SubAreaReader(db)
             total = reader.count()
             rows = reader.fetch(0, 5)
+            all_rows = reader.fetch_all()
             assert total > 0
             assert 0 < len(rows) <= 5
+            assert len(all_rows) == total
             assert all('sub_area_id' in r for r in rows)

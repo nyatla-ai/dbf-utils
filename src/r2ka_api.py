@@ -134,6 +134,16 @@ class SubAreaReader:
         records = [dict(zip(cols, row)) for row in cur.fetchall()]
         return records
 
+    def fetch_all(self) -> list[dict[str, object]]:
+        """Return all records from ``sub_areas``."""
+        cur = self._db.conn.execute(
+            "SELECT sub_area_id, s_area_code, area_id, section_id, city_id, prefecture_id "
+            "FROM sub_areas ORDER BY sub_area_id"
+        )
+        cols = [d[0] for d in cur.description]
+        records = [dict(zip(cols, row)) for row in cur.fetchall()]
+        return records
+
 
 __all__ = [
     "get_city_id",
