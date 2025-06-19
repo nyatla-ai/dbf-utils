@@ -13,8 +13,9 @@ from .database import Database
 class R2KAImporter:
     """Import records from one or more CSV files into a normalized SQLite database."""
 
-    def __init__(self, db: Database) -> None:
+    def __init__(self, db: Database, encoding: str = "cp932") -> None:
         self.db = db
+        self.encoding = encoding
 
     def _create_schema(self, conn: sqlite3.Connection) -> None:
         cur = conn.cursor()
@@ -97,11 +98,11 @@ class R2KAImporter:
     def _iter_records(self, path: str) -> Iterable[dict[str, str]]:
         """Yield records from a CSV or DBF file as dictionaries."""
         if path.lower().endswith(".dbf"):
-            table = DBF(path, encoding="cp932")
+            table = DBF(path, encoding=self.encoding)
             for rec in table:
                 yield {k: (str(v) if v is not None else "") for k, v in rec.items()}
         else:
-            with open(path, encoding="cp932", newline="") as f:
+            with open(path, encoding=self.encoding, newline="") as f:
                 reader = csv.DictReader(f)
                 for row in reader:
                     yield row

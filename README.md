@@ -36,5 +36,8 @@ python app/build_database.py CSVディレクトリ 出力.db
 python app/import_r2ka.py 出力.db ./data/*.{csv,dbf}
 ```
 
+`--encoding` オプションで CSV/DBF ファイルの文字コードを指定できます。既定値は
+`cp932` です。
+
 もし CSV 内に登録できないレコードが含まれている場合は、その内容を表示して処理を中断します。
 
