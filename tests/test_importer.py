@@ -13,7 +13,7 @@ class TestR2KAImporterIntegration(unittest.TestCase):
         with tempfile.TemporaryDirectory() as tmpdir:
             db_path = Path(tmpdir) / 'out.db'
             with Database(db_path) as db:
-                importer = R2KAImporter(db)
+                importer = R2KAImporter(db, encoding="cp932")
                 attempted, inserted = importer.import_csvs([str(dbf_path)])
                 self.assertTrue(db_path.exists(), 'Database file should be created')
                 self.assertGreater(attempted, 0)
@@ -41,7 +41,7 @@ class TestR2KAImporterIntegration(unittest.TestCase):
         with tempfile.TemporaryDirectory() as tmpdir:
             db_path = Path(tmpdir) / 'out.db'
             with Database(db_path) as db:
-                importer = R2KAImporter(db)
+                importer = R2KAImporter(db, encoding="cp932")
                 importer.import_csvs([str(dbf_path)])
                 conn = db.conn
                 cur = conn.cursor()

@@ -18,7 +18,7 @@ def test_get_sub_area_id():
     with tempfile.TemporaryDirectory() as tmpdir:
         db_path = Path(tmpdir) / 'out.db'
         with Database(db_path) as db:
-            importer = R2KAImporter(db)
+            importer = R2KAImporter(db, encoding="cp932")
             importer.import_csvs([str(dbf_path)])
 
             selector = SubAreaIdSelector(db)
@@ -46,7 +46,7 @@ def test_get_city_id():
     with tempfile.TemporaryDirectory() as tmpdir:
         db_path = Path(tmpdir) / 'out.db'
         with Database(db_path) as db:
-            importer = R2KAImporter(db)
+            importer = R2KAImporter(db, encoding="cp932")
             importer.import_csvs([str(dbf_path)])
 
             selector = CityIdSelector(db)
@@ -72,7 +72,7 @@ def test_sub_area_reader():
     with tempfile.TemporaryDirectory() as tmpdir:
         db_path = Path(tmpdir) / 'out.db'
         with Database(db_path) as db:
-            importer = R2KAImporter(db)
+            importer = R2KAImporter(db, encoding="cp932")
             importer.import_csvs([str(dbf_path)])
 
             reader = SubAreaReader(db)
@@ -90,7 +90,7 @@ def test_codes_view_reader():
     with tempfile.TemporaryDirectory() as tmpdir:
         db_path = Path(tmpdir) / 'out.db'
         with Database(db_path) as db:
-            importer = R2KAImporter(db)
+            importer = R2KAImporter(db, encoding="cp932")
             importer.import_csvs([str(dbf_path)])
 
             reader = CodesViewReader(db)

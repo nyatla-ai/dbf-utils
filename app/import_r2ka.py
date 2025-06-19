@@ -24,6 +24,11 @@ def parse_args() -> argparse.Namespace:
         type=str,
         help="R2KA CSV or DBF files encoded in SJIS or glob patterns",
     )
+    parser.add_argument(
+        "--encoding",
+        default="cp932",
+        help="File encoding for input CSV/DBF (default: cp932)",
+    )
     return parser.parse_args()
 
 
@@ -34,7 +39,7 @@ def main() -> None:
         matches = glob.glob(pattern)
         paths.extend(matches if matches else [pattern])
     with Database(args.db_path) as db:
-        importer = R2KAImporter(db)
+        importer = R2KAImporter(db, encoding=args.encoding)
         try:
             attempted, inserted = importer.import_csvs(paths)
         except ValueError as e:
