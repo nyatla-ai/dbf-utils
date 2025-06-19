@@ -7,7 +7,7 @@ import glob
 import sys
 import os
 
-sys.path.append(os.path.join(os.path.dirname(__file__), '../src'))
+sys.path.append(os.path.join(os.path.dirname(__file__), '../'))
 
 from estat_shp_utils.database import Database
 from estat_shp_utils.r2ka_importer import R2KAImporter
