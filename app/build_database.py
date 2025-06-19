@@ -2,7 +2,11 @@
 from __future__ import annotations
 
 import argparse
+import sys, os
 from pathlib import Path
+
+#%%
+sys.path.append(os.path.join(os.path.dirname(__file__), '../src'))
 
 
 from estat_shp_utils.csv_to_sqlite import CsvToSqliteConverter

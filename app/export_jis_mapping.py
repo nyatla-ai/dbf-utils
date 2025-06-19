@@ -1,0 +1,41 @@
+#!/usr/bin/env python3
+from __future__ import annotations
+
+import argparse
+import csv
+import sys, os
+from pathlib import Path
+
+#%%
+sys.path.append(os.path.join(os.path.dirname(__file__), '../src'))
+
+from estat_shp_utils.database import Database
+
+
+def parse_args() -> argparse.Namespace:
+    parser = argparse.ArgumentParser(
+        description="Export sub_area_id to jis_code mapping as CSV"
+    )
+    parser.add_argument("db_path", type=Path, help="SQLite database path")
+    parser.add_argument("csv_path", type=Path, help="Output CSV file path")
+    return parser.parse_args()
+
+
+def main() -> None:
+    args = parse_args()
+    with Database(args.db_path) as db:
+        cur = db.conn.execute(
+            "SELECT sub_area_id, prefecture_code, city_code, s_area_code "
+            "FROM codes_view ORDER BY sub_area_id"
+        )
+        rows = cur.fetchall()
+
+    with open(args.csv_path, "w", newline="") as f:
+        writer = csv.writer(f)
+        for sub_area_id, pref_code, city_code, s_area_code in rows:
+            jis_code = f"{pref_code}{city_code:03d}{s_area_code:06d}"
+            writer.writerow([sub_area_id, jis_code])
+
+
+if __name__ == "__main__":
+    main()
