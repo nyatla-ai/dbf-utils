@@ -9,6 +9,7 @@ import os
 sys.path.append(os.path.join(os.path.dirname(__file__), '../'))
 
 from estat_shp_utils.csv_to_sqlite import CsvToSqliteConverter
+from estat_shp_utils.database import create_codes_view, Database
 
 
 def parse_args() -> argparse.Namespace:
@@ -22,6 +23,9 @@ def main() -> None:
     args = parse_args()
     converter = CsvToSqliteConverter(csv_dir=str(args.csv_dir), db_path=str(args.db_path))
     converter.convert()
+    # Create view if the required tables exist
+    with Database(args.db_path) as db:
+        create_codes_view(db.conn)
     print(f"Database saved to {args.db_path}")
 
 
