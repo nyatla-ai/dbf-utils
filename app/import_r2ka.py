@@ -9,7 +9,7 @@ import os
 
 sys.path.append(os.path.join(os.path.dirname(__file__), '../'))
 
-from estat_shp_utils.database import Database
+from estat_shp_utils.database import Database, create_codes_view
 from estat_shp_utils.r2ka_importer import R2KAImporter
 
 
@@ -45,6 +45,7 @@ def main() -> None:
         except ValueError as e:
             print(e)
             sys.exit(1)
+        create_codes_view(db.conn)
         print(f"Processed {attempted} rows, inserted {inserted} new records.")
         print(f"Database saved to {args.db_path}")
 

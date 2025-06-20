@@ -7,7 +7,7 @@ from collections import defaultdict
 
 import csv
 from dbfread import DBF
-from .database import Database
+from .database import Database, create_codes_view
 
 
 class R2KAImporter:
@@ -70,21 +70,7 @@ class R2KAImporter:
         )
         conn.commit()
 
-        cur.execute(
-            """
-            CREATE VIEW IF NOT EXISTS codes_view AS
-            SELECT
-                sa.sub_area_id AS sub_area_id,
-                p.pref_code AS prefecture_code,
-                c.city_code AS city_code,
-                sa.s_area_code AS s_area_code,
-                ((p.pref_code * 1000 + c.city_code) * 1000000 + sa.s_area_code) AS jis_code
-            FROM sub_areas sa
-            JOIN cities c ON sa.city_id = c.city_id
-            JOIN prefectures p ON sa.prefecture_id = p.prefecture_id
-            """
-        )
-        conn.commit()
+        create_codes_view(conn)
 
     def _parse_numeric_code(self, value: str, length: int) -> int:
         """Validate and convert a zero padded numeric code to int."""
