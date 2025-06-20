@@ -14,7 +14,7 @@ from estat_shp_utils.database import Database
 
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(
-        description="Export sub_area_id to jis_code mapping as CSV"
+        description="Export jis_code to sub_area_id mapping as CSV"
     )
     parser.add_argument("db_path", type=Path, help="SQLite database path")
     parser.add_argument("csv_path", type=Path, help="Output CSV file path")
@@ -34,7 +34,7 @@ def main() -> None:
         writer = csv.writer(f)
         for sub_area_id, pref_code, city_code, s_area_code in rows:
             jis_code = f"{pref_code}{city_code:03d}{s_area_code:06d}"
-            writer.writerow([sub_area_id, jis_code])
+            writer.writerow([jis_code, sub_area_id])
 
 
 if __name__ == "__main__":
