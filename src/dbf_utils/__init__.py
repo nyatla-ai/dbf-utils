@@ -9,6 +9,7 @@ from .r2ka import (
     CodesViewReader,
     R2KAImporter,
 )
+from .n03 import N03Importer
 
 __all__ = [
     "CsvToSqliteConverter",
@@ -23,4 +24,5 @@ __all__ = [
     "SubAreaReader",
     "CodesViewReader",
     "R2KAImporter",
+    "N03Importer",
 ]

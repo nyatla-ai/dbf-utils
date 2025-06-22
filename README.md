@@ -23,6 +23,7 @@ pip install -e .
 - `app/build_database.py` - 任意の CSV 群を 1 つのデータベースにまとめます。
 - `app/import_generic_dbf.py` - 単一の DBF を簡易的に取り込むサンプル。
 - `app/estat/import_r2ka.py` - `doc/estat/R2KA_database_spec.md` のスキーマに従って R2KA 形式の CSV/DBF を取り込みます。
+- `app/import_n03.py` - 国土数値情報 N03 形式の DBF を取り込みます。
 
 ## 使用例
 
@@ -36,6 +37,12 @@ python app/build_database.py CSVディレクトリ 出力.db
 
 ```bash
 python app/import_generic_dbf.py 出力.db data.dbf
+```
+
+### N03 DBF 取り込み
+
+```bash
+python app/import_n03.py 出力.db dev/N03-20240101_33.dbf
 ```
 
 ### R2KA CSV/DBF の取り込み

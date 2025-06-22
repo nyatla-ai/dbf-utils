@@ -2,6 +2,8 @@ import sqlite3
 import tempfile
 from pathlib import Path
 import unittest
+import sys
+sys.path.insert(0, str(Path(__file__).resolve().parents[1] / 'src'))
 
 
 from dbf_utils.database import Database
