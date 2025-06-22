@@ -8,8 +8,8 @@ from dbfread import DBF
 from ..database import Database
 
 
-class N03Importer:
-    """Import municipalities from the MLIT N03 DBF format."""
+class GISMapImporter:
+    """Import municipalities from the MLIT GIS Map (formerly N03) DBF format."""
 
     def __init__(self, db: Database, encoding: str = "cp932") -> None:
         self.db = db
@@ -40,7 +40,7 @@ class N03Importer:
         conn.commit()
 
     def import_dbf(self, path: str) -> tuple[int, int]:
-        """Import a single N03 DBF file.
+        """Import a single GIS Map DBF file.
 
         Returns a tuple of (records_read, cities_inserted).
         """
@@ -90,4 +90,4 @@ class N03Importer:
         return attempted, inserted
 
 
-__all__ = ["N03Importer"]
+__all__ = ["GISMapImporter"]
