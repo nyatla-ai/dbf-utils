@@ -6,8 +6,8 @@ from __future__ import annotations
 import argparse
 from pathlib import Path
 
-from estat_shp_utils.database import Database
-from estat_shp_utils.r2ka_api import CityIdSelector
+from dbf_utils.database import Database
+from dbf_utils.r2ka import CityIdSelector
 
 
 def main() -> None:

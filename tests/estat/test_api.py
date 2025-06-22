@@ -2,10 +2,9 @@ import sqlite3
 import tempfile
 from pathlib import Path
 
-
-from estat_shp_utils.database import Database
-from estat_shp_utils.r2ka_importer import R2KAImporter
-from estat_shp_utils.r2ka_api import (
+from dbf_utils.database import Database
+from dbf_utils.r2ka import (
+    R2KAImporter,
     CityIdSelector,
     SubAreaIdSelector,
     SubAreaReader,
@@ -66,6 +65,7 @@ def test_get_city_id():
             selector._conn = sqlite3.connect(str(db_path))
             missing = selector.get_city_id(99, 999)
             assert missing is None
+
 
 def test_sub_area_reader():
     dbf_path = Path('dev/r2ka11.dbf')

@@ -7,7 +7,7 @@ from collections import defaultdict
 
 import csv
 from dbfread import DBF
-from .database import Database, create_codes_view
+from ..database import Database, create_codes_view
 
 
 class R2KAImporter:

@@ -1,7 +1,7 @@
 [project]
-name = "estat-shp-utils"
+name = "dbf-utils"
 version = "0.0.0"
-description = "Utilities for converting CSV files to normalized SQLite databases"
+description = "Utilities for converting CSV/DBF files to normalized SQLite databases"
 readme = "README.md"
 requires-python = ">=3.8"
 authors = [{name = "Unknown"}]
@@ -15,5 +15,5 @@ requires = ["setuptools>=61"]
 build-backend = "setuptools.build_meta"
 
 [tool.setuptools.packages.find]
-where = ["."]
-include = ["estat_shp_utils*"]
+where = ["src"]
+include = ["dbf_utils*"]
