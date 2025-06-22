@@ -9,7 +9,7 @@ from .r2ka import (
     CodesViewReader,
     R2KAImporter,
 )
-from .n03 import N03Importer
+from .gis_map import GISMapImporter
 
 __all__ = [
     "CsvToSqliteConverter",
@@ -24,5 +24,5 @@ __all__ = [
     "SubAreaReader",
     "CodesViewReader",
     "R2KAImporter",
-    "N03Importer",
+    "GISMapImporter",
 ]

@@ -4,15 +4,15 @@ import sys
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / 'src'))
 
 from dbf_utils.database import Database
-from dbf_utils.n03 import N03Importer
+from dbf_utils.gis_map import GISMapImporter
 
 
-def test_import_n03_dbf():
+def test_import_gis_map_dbf():
     dbf_path = Path('dev/N03-20240101_33.dbf')
     with tempfile.TemporaryDirectory() as tmpdir:
         db_path = Path(tmpdir) / 'out.db'
         with Database(db_path) as db:
-            importer = N03Importer(db, encoding='cp932')
+            importer = GISMapImporter(db, encoding='cp932')
             attempted, inserted = importer.import_dbf(str(dbf_path))
             assert attempted > 0
             assert inserted > 0
