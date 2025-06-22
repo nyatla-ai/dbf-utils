@@ -6,7 +6,7 @@ import re
 from collections import defaultdict
 
 import csv
-from dbfread import DBF
+from ..dbf import parse_dbf
 from ..database import Database, create_codes_view
 
 
@@ -84,8 +84,7 @@ class R2KAImporter:
     def _iter_records(self, path: str) -> Iterable[dict[str, str]]:
         """Yield records from a CSV or DBF file as dictionaries."""
         if path.lower().endswith(".dbf"):
-            table = DBF(path, encoding=self.encoding)
-            for rec in table:
+            for rec in parse_dbf(path, encoding=self.encoding):
                 yield {k: (str(v) if v is not None else "") for k, v in rec.items()}
         else:
             with open(path, encoding=self.encoding, newline="") as f:
