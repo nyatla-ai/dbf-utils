@@ -4,7 +4,7 @@ import sqlite3
 from pathlib import Path
 from typing import Dict, Optional, Tuple
 
-from .database import Database
+from ..database import Database
 
 
 def get_city_id(db: Database, pref_code: int, city_code: int) -> Optional[int]:

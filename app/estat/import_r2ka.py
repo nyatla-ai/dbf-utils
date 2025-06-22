@@ -4,13 +4,10 @@ from __future__ import annotations
 import argparse
 from pathlib import Path
 import glob
-import sys
-import os
 
-sys.path.append(os.path.join(os.path.dirname(__file__), '../'))
 
-from estat_shp_utils.database import Database, create_codes_view
-from estat_shp_utils.r2ka_importer import R2KAImporter
+from dbf_utils.database import Database, create_codes_view
+from dbf_utils.r2ka import R2KAImporter
 
 
 def parse_args() -> argparse.Namespace:

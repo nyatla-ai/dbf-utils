@@ -4,8 +4,8 @@ from pathlib import Path
 import unittest
 
 
-from estat_shp_utils.database import Database
-from estat_shp_utils.r2ka_importer import R2KAImporter
+from dbf_utils.database import Database
+from dbf_utils.r2ka import R2KAImporter
 
 class TestR2KAImporterIntegration(unittest.TestCase):
     def test_db_created_from_dbf(self):

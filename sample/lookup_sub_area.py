@@ -7,8 +7,8 @@ import argparse
 from pathlib import Path
 
 
-from estat_shp_utils.database import Database
-from estat_shp_utils.r2ka_api import SubAreaIdSelector
+from dbf_utils.database import Database
+from dbf_utils.r2ka import SubAreaIdSelector
 
 
 def main() -> None:
