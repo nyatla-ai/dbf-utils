@@ -19,3 +19,13 @@ def test_import_gis_map_dbf():
             cur = db.conn.execute('SELECT COUNT(*) FROM cities')
             count = cur.fetchone()[0]
             assert count == inserted
+            # verify lookup tables
+            cur = db.conn.execute('SELECT COUNT(*) FROM distincts')
+            assert cur.fetchone()[0] >= 0
+            cur = db.conn.execute('SELECT COUNT(*) FROM wards')
+            assert cur.fetchone()[0] > 0
+            cur = db.conn.execute('PRAGMA table_info(cities)')
+            cols = [row[1] for row in cur.fetchall()]
+            assert 'subprefecter_id' in cols
+            assert 'distinct_id' in cols
+            assert 'ward_id' in cols
