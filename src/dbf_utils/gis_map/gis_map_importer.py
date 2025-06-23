@@ -5,7 +5,7 @@ from typing import Dict, Iterable, Tuple
 
 from ..dbf import parse_dbf
 
-from ..database import Database, create_cities_view
+from ..database import Database, create_areas_view
 
 
 class GISMapImporter:
@@ -65,7 +65,7 @@ class GISMapImporter:
             """
         )
         conn.commit()
-        create_cities_view(conn)
+        create_areas_view(conn)
 
     def import_dbf(self, path: str) -> tuple[int, int]:
         """Import a single GIS Map DBF file.
