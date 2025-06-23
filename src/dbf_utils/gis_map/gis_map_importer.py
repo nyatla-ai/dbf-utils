@@ -5,7 +5,7 @@ from typing import Dict, Iterable, Tuple
 
 from ..dbf import parse_dbf
 
-from ..database import Database
+from ..database import Database, create_cities_view
 
 
 class GISMapImporter:
@@ -29,8 +29,8 @@ class GISMapImporter:
         cur.execute(
             """
             CREATE TABLE IF NOT EXISTS subprefecters (
-                subprefecter_id INTEGER PRIMARY KEY AUTOINCREMENT,
-                subprefecter_name TEXT UNIQUE NOT NULL
+                subpref_id INTEGER PRIMARY KEY AUTOINCREMENT,
+                subpref_name TEXT UNIQUE NOT NULL
             )
             """
         )
@@ -57,7 +57,7 @@ class GISMapImporter:
                 pref_code INTEGER NOT NULL REFERENCES prefectures(pref_code),
                 city_code INTEGER NOT NULL,
                 city_name TEXT NOT NULL,
-                subprefecter_id INTEGER REFERENCES subprefecters(subprefecter_id),
+                subpref_id INTEGER REFERENCES subprefecters(subpref_id),
                 distinct_id INTEGER REFERENCES distincts(distinct_id),
                 ward_id INTEGER REFERENCES wards(ward_id),
                 UNIQUE(pref_code, city_code)
@@ -65,6 +65,7 @@ class GISMapImporter:
             """
         )
         conn.commit()
+        create_cities_view(conn)
 
     def import_dbf(self, path: str) -> tuple[int, int]:
         """Import a single GIS Map DBF file.
@@ -83,7 +84,7 @@ class GISMapImporter:
         city_cache: Dict[Tuple[int, int], int] = {
             (p, c): cid for p, c, cid in cur.fetchall()
         }
-        cur.execute("SELECT subprefecter_name, subprefecter_id FROM subprefecters")
+        cur.execute("SELECT subpref_name, subpref_id FROM subprefecters")
         subpref_cache: Dict[str, int] = {n: i for n, i in cur.fetchall()}
         cur.execute("SELECT distinct_name, distinct_id FROM distincts")
         distinct_cache: Dict[str, int] = {n: i for n, i in cur.fetchall()}
@@ -117,7 +118,7 @@ class GISMapImporter:
             if subpref_name:
                 if subpref_name not in subpref_cache:
                     cur.execute(
-                        "INSERT INTO subprefecters (subprefecter_name) VALUES (?)",
+                    "INSERT INTO subprefecters (subpref_name) VALUES (?)",
                         (subpref_name,),
                     )
                     subpref_cache[subpref_name] = cur.lastrowid
@@ -149,7 +150,7 @@ class GISMapImporter:
 
             if (pref_code, city_code) not in city_cache:
                 cur.execute(
-                    "INSERT INTO cities (pref_code, city_code, city_name, subprefecter_id, distinct_id, ward_id) VALUES (?, ?, ?, ?, ?, ?)",
+                    "INSERT INTO cities (pref_code, city_code, city_name, subpref_id, distinct_id, ward_id) VALUES (?, ?, ?, ?, ?, ?)",
                     (pref_code, city_code, city_name, subpref_id, distinct_id, ward_id),
                 )
                 city_cache[(pref_code, city_code)] = cur.lastrowid

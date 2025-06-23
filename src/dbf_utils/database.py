@@ -35,6 +35,35 @@ def create_codes_view(conn: sqlite3.Connection) -> None:
     conn.commit()
 
 
+def create_cities_view(conn: sqlite3.Connection) -> None:
+    """Create ``cities_view`` if required tables are present."""
+    required = [
+        'cities',
+        'subprefecters',
+        'distincts',
+        'wards',
+    ]
+    if not all(_table_exists(conn, t) for t in required):
+        return
+    conn.execute(
+        """
+        CREATE VIEW IF NOT EXISTS cities_view AS
+        SELECT
+            c.city_id AS city_id,
+            c.pref_code AS pref_code,
+            sp.subpref_name AS subpref_name,
+            d.distinct_name AS distinct_name,
+            c.city_name AS city_name,
+            w.ward_name AS ward_name
+        FROM cities c
+        LEFT JOIN subprefecters sp ON c.subpref_id = sp.subpref_id
+        LEFT JOIN distincts d ON c.distinct_id = d.distinct_id
+        LEFT JOIN wards w ON c.ward_id = w.ward_id
+        """,
+    )
+    conn.commit()
+
+
 class Database:
     """Simple wrapper around :class:`sqlite3.Connection`."""
 
@@ -53,4 +82,4 @@ class Database:
         self.close()
 
 
-__all__ = ["Database", "create_codes_view"]
+__all__ = ["Database", "create_codes_view", "create_cities_view"]
