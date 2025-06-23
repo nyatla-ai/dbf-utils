@@ -31,10 +31,10 @@ def test_import_gis_map_dbf():
             assert 'ward_id' in cols
 
             cur = db.conn.execute(
-                "SELECT name FROM sqlite_master WHERE type='view' AND name='cities_view'"
+                "SELECT name FROM sqlite_master WHERE type='view' AND name='areas_view'"
             )
             assert cur.fetchone() is not None
             cur = db.conn.execute(
-                'SELECT city_id, pref_code, subpref_name, distinct_name, city_name, ward_name FROM cities_view LIMIT 1'
+                'SELECT city_id, pref_code, city_code, subpref_name, distinct_name, city_name, ward_name FROM areas_view LIMIT 1'
             )
             cur.fetchall()
