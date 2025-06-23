@@ -26,6 +26,15 @@ def test_import_gis_map_dbf():
             assert cur.fetchone()[0] > 0
             cur = db.conn.execute('PRAGMA table_info(cities)')
             cols = [row[1] for row in cur.fetchall()]
-            assert 'subprefecter_id' in cols
+            assert 'subpref_id' in cols
             assert 'distinct_id' in cols
             assert 'ward_id' in cols
+
+            cur = db.conn.execute(
+                "SELECT name FROM sqlite_master WHERE type='view' AND name='cities_view'"
+            )
+            assert cur.fetchone() is not None
+            cur = db.conn.execute(
+                'SELECT city_id, pref_code, subpref_name, distinct_name, city_name, ward_name FROM cities_view LIMIT 1'
+            )
+            cur.fetchall()
