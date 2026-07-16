@@ -89,3 +89,161 @@ CSV から取り込む際、`PREF`、`CITY`、`S_AREA` の各値はそれぞれ 
 | s_area_code | INTEGER | `sub_areas.s_area_code` |
 | jis_code | INTEGER | `((prefecture_code*1000)+city_code)*1000000+s_area_code` |
 
+## 地名 ID テーブル
+
+R2KA の `sub_areas` は `PREF/CITY/S_AREA` に対応する統計区域コード単位のテーブルです。
+一方、地図表示や辞書化では、同一の表示地名を同一 ID として扱う必要があります。
+このため、表示地名単位の ID として `x_district_id` を定義します。
+
+### 前提
+
+`S_AREA` は表示地名そのものの ID ではなく、統計区域コードです。
+そのため、異なる `S_AREA` が同じ表示地名を持つ場合があります。
+
+例:
+
+```
+PREF/CITY/S_AREA  S_NAME
+35/216/001301     大字小野田
+35/216/001302     大字小野田
+35/216/001303     大字小野田
+```
+
+この場合、`sub_areas` としては別の統計区域ですが、表示地名としては同じ地名へ名寄せします。
+
+### x_districts
+
+`x_districts` は、表示地名単位の ID を保持するテーブルです。
+`x_district_id` は `0` から始まる連続整数とします。
+
+| column | type | details |
+|--------|------|---------|
+| x_district_id | INTEGER PK | 表示地名 ID。0 から始まる連続整数 |
+| prefecture_id | INTEGER FK | `prefectures.prefecture_id` |
+| city_id | INTEGER FK | `cities.city_id` |
+| area_id | INTEGER FK | `areas.area_id` |
+| section_id | INTEGER | `sections.section_id`。丁目なしは `0` |
+| first_sub_area_id | INTEGER FK | この地名が初めて出現した `sub_areas.sub_area_id` |
+
+`section_id` は `NULL` ではなく `0` に正規化します。
+これは SQLite の `UNIQUE` 制約で `NULL` が同一値として扱われないことを避けるためです。
+
+次の組み合わせは一意でなければなりません。
+
+```
+UNIQUE(prefecture_id, city_id, area_id, section_id)
+```
+
+### x_sub_area_districts
+
+`x_sub_area_districts` は、統計区域 ID から表示地名 ID への対応を保持するテーブルです。
+
+| column | type | details |
+|--------|------|---------|
+| sub_area_id | INTEGER PK | `sub_areas.sub_area_id` |
+| x_district_id | INTEGER FK | `x_districts.x_district_id` |
+
+対応は多対一です。
+複数の `sub_area_id` が同じ `x_district_id` に対応してよいものとします。
+
+```
+sub_area_id -> x_district_id
+```
+
+### x_district_id の採番規則
+
+`x_district_id` は `sub_area_id` の出現順で採番します。
+
+手順:
+
+1. `sub_areas` を `sub_area_id` 昇順で走査する。
+2. 各行から地名キーを作る。
+3. 未登録の地名キーが出現したら、次の `x_district_id` を割り当てる。
+4. すべての `sub_area_id` について `x_sub_area_districts` に対応を記録する。
+
+地名キーは次の4要素です。
+
+```
+(prefecture_id, city_id, area_id, section_id_or_0)
+```
+
+疑似コード:
+
+```python
+next_id = 0
+district_key_to_id = {}
+
+for sub_area in sub_areas ORDER BY sub_area_id:
+    key = (
+        sub_area.prefecture_id,
+        sub_area.city_id,
+        sub_area.area_id,
+        sub_area.section_id or 0,
+    )
+
+    if key not in district_key_to_id:
+        district_key_to_id[key] = next_id
+        insert into x_districts values (
+            next_id,
+            key.prefecture_id,
+            key.city_id,
+            key.area_id,
+            key.section_id,
+            sub_area.sub_area_id,
+        )
+        next_id += 1
+
+    insert into x_sub_area_districts values (
+        sub_area.sub_area_id,
+        district_key_to_id[key],
+    )
+```
+
+この規則により、`x_district_id` 昇順は地名の初出順になります。
+
+### 階層順序制約
+
+`x_district_id` 昇順に `x_districts` を走査したとき、地名階層は完全な入れ子順でなければなりません。
+
+階層は次の4段です。
+
+```
+prefecture -> city -> area -> section
+```
+
+同じ上位 prefix が、別の prefix を挟んだ後で再出現してはなりません。
+
+許容例:
+
+```
+A / X / a / 1
+A / X / a / 2
+A / X / b / 1
+A / Y / c / 1
+B / Z / d / 1
+```
+
+不正例:
+
+```
+A / X / a / 1
+A / Y / b / 1
+A / X / c / 1  # A/X が再出現
+```
+
+この制約に違反する場合、`x_districts` を階層データとしてシリアル化する処理は失敗しなければなりません。
+不正な順序を自動で並べ替えてはなりません。
+
+### 用途
+
+ラスタ値が `codes_view.jis_code`、つまり `PREF/CITY/S_AREA` 由来の区域 ID である場合、次の2段階で表示地名 ID へ remap できます。
+
+```
+codes_view.jis_code -> sub_area_id -> x_district_id
+```
+
+`x_district_id` は、表示地名辞書や `GisWordBook` の index として使用できます。
+
+```
+x_district_id -> [prefecture, city, area, section]
+```

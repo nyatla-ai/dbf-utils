@@ -4,6 +4,7 @@ from __future__ import annotations
 import argparse
 from pathlib import Path
 import glob
+import sys
 
 
 from dbf_utils.database import Database, create_codes_view
@@ -43,7 +44,14 @@ def main() -> None:
             print(e)
             sys.exit(1)
         create_codes_view(db.conn)
+        district_count = db.conn.execute(
+            "SELECT COUNT(*) FROM x_districts"
+        ).fetchone()[0]
+        mapping_count = db.conn.execute(
+            "SELECT COUNT(*) FROM x_sub_area_districts"
+        ).fetchone()[0]
         print(f"Processed {attempted} rows, inserted {inserted} new records.")
+        print(f"Created {district_count} district records and {mapping_count} sub-area mappings.")
         print(f"Database saved to {args.db_path}")
 
 

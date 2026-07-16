@@ -32,11 +32,17 @@ class TestR2KAImporterIntegration(unittest.TestCase):
                 area_count = cur.fetchone()[0]
                 cur.execute('SELECT COUNT(*) FROM sections')
                 section_count = cur.fetchone()[0]
+                cur.execute('SELECT COUNT(*) FROM x_districts')
+                district_count = cur.fetchone()[0]
+                cur.execute('SELECT COUNT(*) FROM x_sub_area_districts')
+                sub_area_district_count = cur.fetchone()[0]
             self.assertGreater(pref_count, 0)
             self.assertGreater(city_count, 0)
             self.assertGreater(sub_count, 0)
             self.assertGreater(area_count, 0)
             self.assertGreater(section_count, 0)
+            self.assertGreater(district_count, 0)
+            self.assertEqual(sub_area_district_count, sub_count)
 
     def test_section_id_nullable(self):
         dbf_path = Path('dev/r2ka11.dbf')
@@ -73,6 +79,33 @@ class TestR2KAImporterIntegration(unittest.TestCase):
             self.assertIsNone(area_only_row[0])
             self.assertIsNotNone(non_chome_row)
             self.assertIsNone(non_chome_row[0])
+
+    def test_district_tables_created(self):
+        dbf_path = Path('dev/r2ka11.dbf')
+        with tempfile.TemporaryDirectory() as tmpdir:
+            db_path = Path(tmpdir) / 'out.db'
+            with Database(db_path) as db:
+                importer = R2KAImporter(db, encoding="cp932")
+                importer.import_csvs([str(dbf_path)])
+                conn = db.conn
+                cur = conn.cursor()
+                cur.execute('SELECT COUNT(*) FROM sub_areas')
+                sub_count = cur.fetchone()[0]
+                cur.execute('SELECT COUNT(*) FROM x_districts')
+                district_count = cur.fetchone()[0]
+                cur.execute('SELECT COUNT(*) FROM x_sub_area_districts')
+                mapping_count = cur.fetchone()[0]
+                cur.execute('SELECT COUNT(*) FROM x_districts WHERE section_id IS NULL')
+                null_section_count = cur.fetchone()[0]
+                cur.execute('SELECT MIN(x_district_id), MAX(x_district_id) FROM x_districts')
+                min_id, max_id = cur.fetchone()
+
+            self.assertEqual(mapping_count, sub_count)
+            self.assertGreater(district_count, 0)
+            self.assertLessEqual(district_count, sub_count)
+            self.assertEqual(null_section_count, 0)
+            self.assertEqual(min_id, 0)
+            self.assertEqual(max_id, district_count - 1)
 
 if __name__ == '__main__':
     unittest.main()

@@ -68,6 +68,27 @@ class R2KAImporter:
             )
             """
         )
+        cur.execute(
+            """
+            CREATE TABLE IF NOT EXISTS x_districts (
+                x_district_id INTEGER PRIMARY KEY,
+                prefecture_id INTEGER NOT NULL REFERENCES prefectures(prefecture_id),
+                city_id INTEGER NOT NULL REFERENCES cities(city_id),
+                area_id INTEGER NOT NULL REFERENCES areas(area_id),
+                section_id INTEGER NOT NULL,
+                first_sub_area_id INTEGER NOT NULL REFERENCES sub_areas(sub_area_id),
+                UNIQUE(prefecture_id, city_id, area_id, section_id)
+            )
+            """
+        )
+        cur.execute(
+            """
+            CREATE TABLE IF NOT EXISTS x_sub_area_districts (
+                sub_area_id INTEGER PRIMARY KEY REFERENCES sub_areas(sub_area_id),
+                x_district_id INTEGER NOT NULL REFERENCES x_districts(x_district_id)
+            )
+            """
+        )
         conn.commit()
 
         create_codes_view(conn)
@@ -229,7 +250,114 @@ class R2KAImporter:
 
         conn.commit()
 
+        self._rebuild_district_tables(conn)
+
         return attempted, inserted
 
+    def _rebuild_district_tables(self, conn: sqlite3.Connection) -> None:
+        """Rebuild display-name district tables from current sub_areas."""
+        cur = conn.cursor()
+        cur.execute("DELETE FROM x_sub_area_districts")
+        cur.execute("DELETE FROM x_districts")
 
-__all__ = ["R2KAImporter"]
+        rows = cur.execute(
+            """
+            SELECT
+                sub_area_id,
+                prefecture_id,
+                city_id,
+                area_id,
+                COALESCE(section_id, 0) AS section_id
+            FROM sub_areas
+            ORDER BY sub_area_id
+            """
+        ).fetchall()
+
+        district_key_to_id: Dict[Tuple[int, int, int, int], int] = {}
+        next_id = 0
+        for sub_area_id, pref_id, city_id, area_id, section_id in rows:
+            key = (pref_id, city_id, area_id, section_id)
+            x_district_id = district_key_to_id.get(key)
+            if x_district_id is None:
+                x_district_id = next_id
+                district_key_to_id[key] = x_district_id
+                cur.execute(
+                    """
+                    INSERT INTO x_districts (
+                        x_district_id,
+                        prefecture_id,
+                        city_id,
+                        area_id,
+                        section_id,
+                        first_sub_area_id
+                    ) VALUES (?, ?, ?, ?, ?, ?)
+                    """,
+                    (
+                        x_district_id,
+                        pref_id,
+                        city_id,
+                        area_id,
+                        section_id,
+                        sub_area_id,
+                    ),
+                )
+                next_id += 1
+            cur.execute(
+                """
+                INSERT INTO x_sub_area_districts (
+                    sub_area_id,
+                    x_district_id
+                ) VALUES (?, ?)
+                """,
+                (sub_area_id, x_district_id),
+            )
+
+        conn.commit()
+
+
+def validate_district_hierarchy(conn: sqlite3.Connection) -> None:
+    """Raise ValueError if x_districts is not a contiguous hierarchy order."""
+    rows = conn.execute(
+        """
+        SELECT
+            x_district_id,
+            prefecture_id,
+            city_id,
+            area_id,
+            section_id
+        FROM x_districts
+        ORDER BY x_district_id
+        """
+    )
+    closed = [set() for _ in range(4)]
+    current: Tuple[int, int, int, int] | None = None
+    for x_district_id, pref_id, city_id, area_id, section_id in rows:
+        path = (pref_id, city_id, area_id, section_id)
+        if current is None:
+            current = path
+            continue
+        if path == current:
+            continue
+        change_depth = next(
+            (
+                index
+                for index, (current_value, path_value) in enumerate(zip(current, path))
+                if current_value != path_value
+            ),
+            None,
+        )
+        if change_depth is None:
+            continue
+        for depth in range(change_depth, 4):
+            closed[depth].add(current[:depth + 1])
+        for depth in range(change_depth, 4):
+            prefix = path[:depth + 1]
+            if prefix in closed[depth]:
+                raise ValueError(
+                    "x_districts is not a contiguous hierarchy order: "
+                    f"x_district_id={x_district_id} depth={depth + 1} prefix={prefix}"
+                )
+        current = path
+
+
+__all__ = ["R2KAImporter", "validate_district_hierarchy"]

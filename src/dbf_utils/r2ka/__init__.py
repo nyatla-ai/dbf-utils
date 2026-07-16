@@ -6,7 +6,7 @@ from .r2ka_api import (
     SubAreaReader,
     CodesViewReader,
 )
-from .r2ka_importer import R2KAImporter
+from .r2ka_importer import R2KAImporter, validate_district_hierarchy
 
 __all__ = [
     "get_city_id",
@@ -16,4 +16,5 @@ __all__ = [
     "SubAreaReader",
     "CodesViewReader",
     "R2KAImporter",
+    "validate_district_hierarchy",
 ]
