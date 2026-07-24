@@ -7,7 +7,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[2] / 'src'))
 
 
 from dbf_utils.database import Database
-from dbf_utils.r2ka import R2KAImporter
+from dbf_utils.r2ka import R2KAImporter, validate_district_hierarchy
 
 class TestR2KAImporterIntegration(unittest.TestCase):
     def test_db_created_from_dbf(self):
@@ -106,6 +106,46 @@ class TestR2KAImporterIntegration(unittest.TestCase):
             self.assertEqual(null_section_count, 0)
             self.assertEqual(min_id, 0)
             self.assertEqual(max_id, district_count - 1)
+
+    def test_district_tables_are_hierarchy_contiguous_when_area_reappears(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            csv_path = Path(tmpdir) / 'r2ka.csv'
+            csv_path.write_text(
+                'PREF,CITY,S_AREA,PREF_NAME,CITY_NAME,S_NAME\n'
+                '01,106,010000,Hokkaido,Sapporo Minami,Moiwa\n'
+                '01,106,320001,Hokkaido,Sapporo Minami,Kashiwa 1\n'
+                '01,106,320002,Hokkaido,Sapporo Minami,Kashiwa 2\n'
+                '01,106,330001,Hokkaido,Sapporo Minami,Moiwa 1\n'
+                '01,106,330002,Hokkaido,Sapporo Minami,Moiwa 2\n',
+                encoding='cp932',
+            )
+            db_path = Path(tmpdir) / 'out.db'
+            with Database(db_path) as db:
+                importer = R2KAImporter(db, encoding="cp932")
+                importer.import_csvs([str(csv_path)])
+                validate_district_hierarchy(db.conn)
+                rows = db.conn.execute(
+                    """
+                    SELECT
+                        a.area_name,
+                        COALESCE(s.section_name, '') AS section_name
+                    FROM x_districts xd
+                    JOIN areas a ON xd.area_id = a.area_id
+                    LEFT JOIN sections s ON xd.section_id = s.section_id
+                    ORDER BY xd.x_district_id
+                    """
+                ).fetchall()
+
+            self.assertEqual(
+                rows,
+                [
+                    ('Moiwa', ''),
+                    ('Moiwa', '1'),
+                    ('Moiwa', '2'),
+                    ('Kashiwa', '1'),
+                    ('Kashiwa', '2'),
+                ],
+            )
 
 if __name__ == '__main__':
     unittest.main()

@@ -269,7 +269,12 @@ class R2KAImporter:
                 area_id,
                 COALESCE(section_id, 0) AS section_id
             FROM sub_areas
-            ORDER BY sub_area_id
+            ORDER BY
+                prefecture_id,
+                city_id,
+                area_id,
+                COALESCE(section_id, 0),
+                sub_area_id
             """
         ).fetchall()
 
